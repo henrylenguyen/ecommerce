@@ -1,15 +1,11 @@
-import { createUser } from '@/servers/controllers/user.controller';
 import * as React from 'react';
 
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type
 interface ILearningProps {
 }
 
-const Learning: React.FunctionComponent<ILearningProps> = async (props) => {
-  const user = await createUser({
-    clerkId: "clerk-id",
-    username: "username",
-    email: "email",
-  });
+const Learning: React.FunctionComponent<ILearningProps> = async () => {
+
   return <div>Learning</div>;
 };
 

@@ -1,6 +1,7 @@
 import * as React from 'react';
 import { ItemList } from '@/components/common';
 import CardItem from '@/components/common/cardItem';
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type
 interface IHomePageProps {
 }
 
@@ -42,7 +43,7 @@ const courses = [
     price: 79
   }
 ]
-const HomePage: React.FunctionComponent<IHomePageProps> = (props) => {
+const HomePage: React.FunctionComponent<IHomePageProps> = () => {
   return <div>
     <ItemList>
       {courses.map((course, index) => (
