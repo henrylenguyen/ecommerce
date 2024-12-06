@@ -41,11 +41,11 @@ const UserSchema = new Schema<IUser>(
       type: [Schema.Types.ObjectId],
       ref: "Course", // liên kết khóa ngoại với course
     },
-    createdAt: {
+    created_at: {
       type: Date,
       default: Date.now,
     },
-    updatedAt: {
+    updated_at: {
       type: Date,
       default: Date.now,
     },

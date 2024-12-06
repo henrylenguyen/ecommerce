@@ -11,8 +11,8 @@ interface IUser extends Document {
   status: EUserStatus;
   role: EUserRole;
   courses: Schema.Types.ObjectId[]; // để liên kết khóa ngoại với course
-  createdAt: Date;
-  updatedAt: Date;
+  created_at: Date;
+  updated_at: Date;
 }
 
 export default IUser;

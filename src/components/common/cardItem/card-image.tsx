@@ -1,19 +1,19 @@
 import Image from 'next/image';
 import Link from 'next/link';
 
-interface CardImageProps {
+interface CardHeaderProps {
   link: string;
   image: string;
   title: string;
 }
 
-export const CardImage = ({ link, image, title }: CardImageProps) => {
+export const CardHeader = ({ link, image, title }: CardHeaderProps) => {
 
   return (
     <Link href={link} className="w-full h-[250px] block relative image-shine">
       <div className="w-full h-full rounded-md">
         <Image
-          src={image} 
+          src={image}
           alt={title}
           className="w-full h-full object-cover rounded-md transition-transform duration-300 hover:scale-105"
           fill
