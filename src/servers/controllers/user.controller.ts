@@ -1,4 +1,4 @@
-import { connectToDatabase } from "@/lib/mongoose"
+import { connectToDatabase } from "@/utils/mongoose"
 import { UserModel } from "@/servers/models"
 
 const createUser = async (params: TCreateUser) => {

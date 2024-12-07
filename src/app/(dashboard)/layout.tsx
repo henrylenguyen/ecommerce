@@ -1,5 +1,5 @@
-import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar, Header } from "@/components/layouts";
+import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 
 interface ILayoutProps {
   children: React.ReactNode;
