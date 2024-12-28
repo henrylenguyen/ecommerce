@@ -1,7 +1,6 @@
 import { ICourse } from "@/servers/interfaces";
 import { ECourseLevel, ECourseStatus } from "@/types/enums";
-import { model, models } from "mongoose";
-import { Schema } from "mongoose";
+import { model, models, Schema } from "mongoose";
 
 // tạo schema cho user
 const CourseSchema = new Schema<ICourse>(
@@ -10,17 +9,22 @@ const CourseSchema = new Schema<ICourse>(
       type: String,
       required: true,
     },
-    description: {
+    slug: {
       type: String,
       required: true,
+      unique: true,
+    },
+    description: {
+      type: String,
+      default: "",
     },
     thumbnail: {
       type: String,
-      required: true,
+      default: "",
     },
     intro_url: {
       type: String,
-      required: true,
+      default: "",
     },
     status: {
       type: String,

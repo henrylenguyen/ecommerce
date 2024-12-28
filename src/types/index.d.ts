@@ -16,3 +16,9 @@ type TCreateUser = {
   name?: string;
   avatar?: string;
 }
+
+type TCreateCourse = {
+  title: string;
+  slug: string;
+  author: string
+}

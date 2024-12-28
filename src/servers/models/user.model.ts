@@ -1,7 +1,6 @@
 import { IUser } from "@/servers/interfaces";
 import { EUserRole, EUserStatus } from "@/types/enums";
-import { model, models } from "mongoose";
-import { Schema } from "mongoose";
+import { model, models, Schema } from "mongoose";
 
 // tạo schema cho user
 const UserSchema = new Schema<IUser>(

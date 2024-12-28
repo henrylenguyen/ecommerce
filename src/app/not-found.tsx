@@ -4,7 +4,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 
 
-const NotFound: React.FC = () => {
+const PageNotFound: React.FC = () => {
   return <div className="flex flex-col gap-4 items-center justify-center h-screen">
     <Image src={notFound} alt="not-found" width={600} height={600} />
       <h1 className="text-2xl font-bold">Không tìm thấy trang</h1>
@@ -16,4 +16,4 @@ const NotFound: React.FC = () => {
   ;
 };
 
-export default NotFound;
+export default PageNotFound;
