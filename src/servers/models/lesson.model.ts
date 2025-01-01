@@ -54,6 +54,7 @@ const LessonSchema = new Schema<ILesson>({
   }
 }, { timestamps: true });
 
+LessonSchema.index({ duration: 1 }); // tạo index cho duration
 const LessonModel = models.Lesson || model<ILesson>("Lesson", LessonSchema); // nếu đã có model Lesson thì sử dụng, nếu không thì tạo mới
 
 export default LessonModel;

@@ -20,3 +20,11 @@ export function createResponse ({
     data: JSON.parse(JSON.stringify(data)),
   }
 }
+
+export function internalResponse () {
+  return {
+    statusCode: 500,
+    message: "Internal server error",
+    data: null,
+  }
+}

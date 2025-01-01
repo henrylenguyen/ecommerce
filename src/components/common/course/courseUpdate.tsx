@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { useRouter } from "next/navigation";
+import { Editor } from "@/components/common";
 
 const formSchema = z.object({
   title: z.string().min(2, {
@@ -65,6 +66,71 @@ const CourseUpdate = () => {
                 <FormLabel>Đường dẫn</FormLabel>
                 <FormControl>
                   <Input placeholder="khoa-hoc-lap-trinh" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="slug"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Giá khuyến mãi</FormLabel>
+                <FormControl>
+                  <Input placeholder="555.000" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="slug"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Giá gốc</FormLabel>
+                <FormControl>
+                  <Input placeholder="999.000" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="slug"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Youtube URL</FormLabel>
+                <FormControl>
+                  <Input placeholder="999.000" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="slug"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Ảnh đại diện</FormLabel>
+                <FormControl>
+                  <Input placeholder="999.000" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="slug"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Mô tả khóa học</FormLabel>
+                <FormControl>
+                  <Editor/>
                 </FormControl>
                 <FormMessage />
               </FormItem>

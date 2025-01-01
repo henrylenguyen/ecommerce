@@ -26,6 +26,14 @@ const CourseSchema = new Schema<ICourse>(
       type: String,
       default: "",
     },
+    price: {
+      type: Number,
+      default: 0,
+    },
+    sale_price: {
+      type: Number,
+      default: 0,
+    },
     status: {
       type: String,
       enum: Object.values(ECourseStatus),
@@ -92,6 +100,7 @@ const CourseSchema = new Schema<ICourse>(
   { timestamps: true }
 );
 
+CourseSchema.index({ lectures: 1 });
 const CourseModel = models.Course || model<ICourse>("Course", CourseSchema); // nếu đã có model Course thì sử dụng, nếu không thì tạo mới
 
 export default CourseModel;
