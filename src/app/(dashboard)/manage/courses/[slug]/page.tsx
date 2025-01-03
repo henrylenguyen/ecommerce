@@ -1,3 +1,4 @@
+import { MarkdownRenderer } from '@/components/common';
 import { Button } from '@/components/ui/button';
 import { getCourseBySlug } from '@/servers/controllers/course.controller';
 import Image from 'next/image';
@@ -36,7 +37,9 @@ const CourseDetailPage: FunctionComponent<ICourseDetailPageProps> = async ({ par
           <Image src={thumbnail} fill className='w-full h-full object-cover rounded-lg' alt={title} />
         </div>
         <h1 className='font-bold text-3xl mb-5 capitalize'>{title}</h1>
-        <Section title='Mô tả'>{description}</Section>
+        <Section title='Mô tả'>
+          <MarkdownRenderer>{description}</MarkdownRenderer>
+        </Section>
         <Section title='Thông tin khóa học'>
           <div className='grid grid-cols-4 gap-5 mb-10'>
             <InfoCard title='Bài học' value='100' />
