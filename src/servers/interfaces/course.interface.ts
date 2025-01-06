@@ -28,6 +28,7 @@ interface ICourse extends Document {
   updated_at: Date;
   _destroy: boolean; // đánh dấu xóa
   order: number;
+  duration: number;
 }
 
 export default ICourse;

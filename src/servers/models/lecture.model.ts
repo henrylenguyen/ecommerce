@@ -39,6 +39,9 @@ const LectureSchema = new Schema<ILecture>({
   },
 }, { timestamps: true });
 
+LectureSchema.index({ lessons: 1 });
+
 const LectureModel = models.Lecture || model<ILecture>("Lecture", LectureSchema); // nếu đã có model Lecture thì sử dụng, nếu không thì tạo mới
+
 
 export default LectureModel;

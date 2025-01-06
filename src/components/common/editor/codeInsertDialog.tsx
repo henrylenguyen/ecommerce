@@ -31,6 +31,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { Code, Eye } from 'lucide-react';
 import { useCallback, useState } from 'react';
+import CodeBlock from '@/components/common/markdown/codeblock/codeBlock';
 
 const CodeInsertDialog = ({ onInsert }) => {
   const [code, setCode] = useState('');

@@ -1,3 +1,5 @@
+import { ICourse } from "@/servers/interfaces";
+
 type TActiveLinkProps = {
   href: string;
   children: React.ReactNode;
@@ -21,4 +23,9 @@ type TCreateCourse = {
   title: string;
   slug: string;
   author: string
+}
+
+type IUpdateCourseParams = {
+  slug: string
+  updateData: Partial<ICourse>
 }

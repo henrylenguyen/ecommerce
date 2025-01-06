@@ -11,7 +11,6 @@ interface IUpdateCourseProps {
 const UpdateCourse: React.FunctionComponent<IUpdateCourseProps> = async ({
   searchParams
 }) => {
-  console.log("searchParams:", searchParams)
   const course = await getCourseBySlug({ slug: searchParams.slug });
   console.log("course:", course)
   if (!course) {
