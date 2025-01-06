@@ -37,10 +37,10 @@ const CodeBlock: React.FC<CodeBlockProps> = ({ inline, className, children, ...p
   }
 
   return (
-    <Card className="my-4 overflow-hidden">
+    <Card className="overflow-hidden">
       <CodeHeader language={language}>{children}</CodeHeader>
       <CardContent className="p-0">
-        <div className="max-h-[600px] overflow-auto">
+        <div className="max-h-[460px] overflow-auto">
           <SyntaxHighlighter
             language={language}
             style={getTheme()}
