@@ -1,37 +1,36 @@
 "use client"
-import React, { useContext, useEffect } from 'react';
-import ContentEditable from './ContentEditable';
-import ContextMenu from './ContextMenu';
-import Toolbar from './Toolbar';
-import { EditorContext, EditorProvider } from './context/EditorContext';
+import { cn } from "@/utils";
+import React from 'react';
+import Content from "./content";
+import { EditorProvider } from "./context/EditorContext";
+import Toolbar from "./toolbar";
+import { htmlToMarkdown } from "./utils";
 
 interface EditorProps {
-  onChange?: (content: string) => void;
+  onChange?: (markdown: string, html: string) => void;
+  initialValue?: string;
+  className?: string;
 }
 
-const Editor: React.FC<EditorProps> = ({ onChange }) => {
-  return (
-    <EditorProvider>
-      <EditorContent onChange={onChange} />
-    </EditorProvider>
-  );
-};
-
-const EditorContent: React.FC<{ onChange?: (content: string) => void }> = ({ onChange }) => {
-  const { content } = useContext(EditorContext)!;
-
-  useEffect(() => {
+const Editor: React.FC<EditorProps> = ({
+  onChange,
+  initialValue = '',
+  className
+}) => {
+  const handleContentChange = (html: string) => {
     if (onChange) {
-      onChange(content);
+      const markdown = htmlToMarkdown(html);
+      onChange(markdown, html);
     }
-  }, [content, onChange]);
+  };
 
   return (
-    <div>
-      <Toolbar />
-      <ContextMenu />
-      <ContentEditable />
-    </div>
+    <EditorProvider initialValue={initialValue} onChange={handleContentChange}>
+      <div className={cn('border rounded-lg', className)}>
+        <Toolbar />
+        <Content />
+      </div>
+    </EditorProvider>
   );
 };
 

@@ -5,6 +5,7 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 
+import { Editor } from "@/components/common";
 import { Button } from "@/components/ui/button";
 import {
   Form,
@@ -65,6 +66,76 @@ const CourseUpdate = () => {
                 <FormLabel>Đường dẫn</FormLabel>
                 <FormControl>
                   <Input placeholder="khoa-hoc-lap-trinh" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="slug"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Giá khuyến mãi</FormLabel>
+                <FormControl>
+                  <Input placeholder="555.000" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="slug"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Giá gốc</FormLabel>
+                <FormControl>
+                  <Input placeholder="999.000" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="slug"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Youtube URL</FormLabel>
+                <FormControl>
+                  <Input placeholder="999.000" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="slug"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Ảnh đại diện</FormLabel>
+                <FormControl>
+                  <Input placeholder="999.000" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="slug"
+            render={({ field }) => (
+              <FormItem className="col-span-2">
+                <FormLabel>Mô tả khóa học</FormLabel>
+                <FormControl>
+                  <Editor
+                    onChange={(markdown: string, html: string) => {
+                      console.log('Markdown:', markdown);
+                      console.log('HTML:', html);
+                    }}
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>
