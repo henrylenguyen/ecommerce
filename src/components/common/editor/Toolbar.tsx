@@ -33,7 +33,7 @@ import {
 import { useEditor } from './context/EditorContext';
 
 const Toolbar = () => {
-  const { executeCommand, setContent, editorRef } = useEditor();
+  const { executeCommand, editorRef } = useEditor();
   const [colorPickerOpen, setColorPickerOpen] = React.useState(false);
   const [selectedColor, setSelectedColor] = React.useState("#000000");
 
@@ -255,11 +255,7 @@ const Toolbar = () => {
       >
         <Quote size={16} />
       </Button>
-      <CodeInsertDialog
-        onInsert={(fragment) => {
-          setContent(fragment);
-        }}
-      />
+      <CodeInsertDialog />
       {/* Other buttons remain the same */}
     </div>
   );

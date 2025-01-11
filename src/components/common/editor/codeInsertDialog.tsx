@@ -1,4 +1,5 @@
-import ReactDOMServer from 'react-dom/server';
+import { insertCodeBlock } from "@/components/common/editor/utils";
+import CodeBlock from '@/components/common/markdown/codeblock/codeBlock';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -30,10 +31,10 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { Code, Eye } from 'lucide-react';
-import { useCallback, useState } from 'react';
-import CodeBlock from '@/components/common/markdown/codeblock/codeBlock';
+import { SetStateAction, useState } from 'react';
+import { useEditor } from "./context/EditorContext";
 
-const CodeInsertDialog = ({ onInsert }) => {
+const CodeInsertDialog = () => {
   const [code, setCode] = useState('');
   const [language, setLanguage] = useState('js');
   const [isOpen, setIsOpen] = useState(false);
@@ -42,7 +43,7 @@ const CodeInsertDialog = ({ onInsert }) => {
   const [showPreviewModal, setShowPreviewModal] = useState(false);
 
   const isMobile = useMediaQuery('(max-width: 768px)');
-
+  const { content, setContent } = useEditor();
   const CODE_LANGUAGES = [
     { label: 'JavaScript', value: 'js' },
     { label: 'TypeScript', value: 'ts' },
@@ -53,7 +54,7 @@ const CodeInsertDialog = ({ onInsert }) => {
     { label: 'JSON', value: 'json' },
   ];
 
-  const handleCodeChange = (e) => {
+  const handleCodeChange = (e: { target: { value: SetStateAction<string>; }; }) => {
     setCode(e.target.value);
     setHasChanges(true);
   };
@@ -64,18 +65,15 @@ const CodeInsertDialog = ({ onInsert }) => {
     </CodeBlock>
   );
 
-  const handleInsert = useCallback(() => {
+  const handleInsert = () => {
     if (!code.trim()) return;
 
-    const codeBlockWrapper = document.createElement('div');
-    codeBlockWrapper.className = 'code-block-wrapper my-4';
-
-    const codeBlockHTML = ReactDOMServer.renderToString(PreviewContent());
-
-    codeBlockWrapper.innerHTML = codeBlockHTML;
-    onInsert(codeBlockWrapper);
-    resetAndClose();
-  }, [code, language, onInsert]);
+    const updatedContent = insertCodeBlock(content, code.trim(), language);
+    setContent(updatedContent);
+    setIsOpen(false);
+    setCode('');
+    setLanguage('js');
+  };
 
   const resetAndClose = () => {
     setCode('');
@@ -84,7 +82,6 @@ const CodeInsertDialog = ({ onInsert }) => {
     setIsOpen(false);
     setShowPreviewModal(false);
   };
-
 
   return (
     <>
@@ -96,7 +93,6 @@ const CodeInsertDialog = ({ onInsert }) => {
           }
         }}
         modal={true}
-
       >
         <DialogTrigger asChild>
           <Button
@@ -116,13 +112,10 @@ const CodeInsertDialog = ({ onInsert }) => {
           onEscapeKeyDown={(e) => e.preventDefault()}
         >
           <div className="flex flex-col h-full">
-            {/* Header */}
             <DialogHeader className="px-6 py-4 border-b flex flex-row items-center justify-between">
               <DialogTitle>Insert Code</DialogTitle>
-
             </DialogHeader>
 
-            {/* Main Content */}
             <div className="flex-1 overflow-hidden flex flex-col p-6">
               <div className="mb-4">
                 <Select
@@ -145,18 +138,16 @@ const CodeInsertDialog = ({ onInsert }) => {
                 </Select>
               </div>
 
-              <div className={`flex-1 min-h-0 grid ${code && 'grid-cols-2'} gap-4 `}>
-                {/* Code Input Area */}
+              <div className={`flex-1 min-h-0 grid ${code && 'grid-cols-2'} gap-4`}>
                 <div className="flex-1 min-h-0 flex flex-col">
                   <Textarea
                     value={code}
                     onChange={handleCodeChange}
                     placeholder="Paste your code here..."
-                    className="flex-1 min-h-0 font-mono resize-none h-full  focus-visible:ring-0 rounded-xl shadow"
+                    className="flex-1 min-h-0 font-mono resize-none h-full focus-visible:ring-0 rounded-xl shadow"
                   />
                 </div>
 
-                {/* Preview Area - Hidden on Mobile */}
                 {!isMobile && code && (
                   <div className="flex-1 min-h-0">
                     <PreviewContent />
@@ -165,10 +156,8 @@ const CodeInsertDialog = ({ onInsert }) => {
               </div>
             </div>
 
-            {/* Footer */}
             <DialogFooter className="px-6 py-4 border-t">
               <div className="flex items-center gap-2">
-                {/* Preview Button - Shown only on Mobile */}
                 {isMobile && code && (
                   <Button
                     variant="outline"

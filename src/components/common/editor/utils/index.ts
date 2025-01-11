@@ -1,5 +1,106 @@
 import TurndownService from 'turndown';
+import { unified } from 'unified';
+import remarkParse from 'remark-parse';
+import remarkStringify from 'remark-stringify';
+import remarkGfm from 'remark-gfm';
 
+// Custom turndown service configuration
+const turndownService = new TurndownService({
+  headingStyle: 'atx',
+  codeBlockStyle: 'fenced',
+  emDelimiter: '_',
+  bulletListMarker: '-',
+  strongDelimiter: '**',
+  br: '\n',
+  blankReplacement: function (content, node) {
+    return node.isBlock ? '\n\n' : '';
+  }
+});
+
+// Helper function to preserve code blocks before markdown conversion
+function preserveCodeBlocks(html: string): { html: string; blocks: Array<{ id: string, code: string }> } {
+  const blocks: Array<{ id: string, code: string }> = [];
+  let modifiedHtml = html;
+
+  // Find and preserve code blocks
+  const codeBlockRegex = /<div class="code-preview" data-language="(.*?)" data-code="(.*?)">/g;
+  modifiedHtml = modifiedHtml.replace(codeBlockRegex, (match, language, code) => {
+    const id = `CODE_BLOCK_${blocks.length}`;
+    blocks.push({
+      id,
+      code: `\`\`\`${language}\n${unescapeHtml(code)}\n\`\`\``
+    });
+    return `<div>${id}</div>`;
+  });
+
+  return { html: modifiedHtml, blocks };
+}
+
+// Helper function to restore code blocks after markdown conversion
+function restoreCodeBlocks(markdown: string, blocks: Array<{ id: string, code: string }>): string {
+  let result = markdown;
+  blocks.forEach(block => {
+    result = result.replace(block.id, block.code);
+  });
+  return result;
+}
+
+// Clean UI elements text before conversion
+function cleanHtml(html: string): string {
+  return html
+    .replace(/<button[^>]*>.*?<\/button>/g, '') // Remove buttons
+    .replace(/(Copy|Edit|Expand \d+ lines)/g, '') // Remove UI text
+    .replace(/\s+/g, ' ') // Normalize whitespace
+    .trim();
+}
+
+export const htmlToMarkdown = (html: string): string => {
+  if (!html) return '';
+
+  // First preserve code blocks
+  const { html: processedHtml, blocks } = preserveCodeBlocks(html);
+
+  // Clean the HTML
+  const cleanedHtml = cleanHtml(processedHtml);
+
+  // Convert to markdown
+  let markdown = turndownService.turndown(cleanedHtml);
+
+  // Restore code blocks
+  markdown = restoreCodeBlocks(markdown, blocks);
+
+  // Fix any double newlines around code blocks
+  markdown = markdown.replace(/\n{3,}/g, '\n\n');
+
+  return markdown.trim();
+};
+
+// Helper function to escape HTML entities in code
+export const escapeHtml = (unsafe: string) => {
+  return unsafe
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+};
+
+// Helper function to unescape HTML entities in code
+export const unescapeHtml = (safe: string) => {
+  return safe
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, "\"")
+    .replace(/&#039;/g, "'");
+};
+
+export const insertCodeBlock = (markdown: string, code: string, language: string): string => {
+  const spacing = markdown.endsWith('\n\n') ? '' : '\n\n';
+  return `${markdown}${spacing}\`\`\`${language}\n${code}\n\`\`\`\n`;
+};
+
+// Inline style utilities
 export const applyInlineStyle = (
   content: string,
   start: number,
@@ -78,15 +179,28 @@ export const insertTable = (
   return `${content.substring(0, position)}${table}${content.substring(position)}`;
 };
 
+export const parseMarkdown = async (markdown: string) => {
+  const result = await unified()
+    .use(remarkParse)
+    .use(remarkGfm)
+    .use(remarkStringify)
+    .process(markdown);
 
+  return String(result);
+};
 
-const turndownService = new TurndownService({
-  headingStyle: 'atx',
-  codeBlockStyle: 'fenced',
-  emDelimiter: '_',
-});
+export const findCodeBlocks = (markdown: string) => {
+  const codeBlockRegex = /```(\w+)?\n([\s\S]*?)```/g;
+  const blocks: Array<{ language: string; code: string; position: number }> = [];
 
-export const htmlToMarkdown = (html: string): string => {
-  if (!html) return '';
-  return turndownService.turndown(html);
+  let match;
+  while ((match = codeBlockRegex.exec(markdown)) !== null) {
+    blocks.push({
+      language: match[1] || 'text',
+      code: match[2].trim(),
+      position: match.index
+    });
+  }
+
+  return blocks;
 };
