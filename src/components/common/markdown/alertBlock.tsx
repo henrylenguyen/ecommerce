@@ -93,9 +93,9 @@ const AlertContainer: React.FC<AlertContainerProps> = ({ type, children }) => {
   const config = getAlertConfig();
 
   return (
-    <Alert className={`my-4 flex items-start ${config.className}`}>
-      <div className={config.iconClassName}>{config.icon}</div>
-      <AlertDescription className="ml-2">{children}</AlertDescription>
+    <Alert className={`my-4 flex items-start w-full ${config.className}`}>
+      <div className={`${config.iconClassName} flex-shrink-0`}>{config.icon}</div>
+      <AlertDescription className="ml-2 break-words">{children}</AlertDescription>
     </Alert>
   );
 };

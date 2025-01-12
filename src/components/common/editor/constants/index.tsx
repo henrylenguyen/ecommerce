@@ -1,3 +1,5 @@
+import { AlertCircle, AlertTriangle, CheckCircle2, Info, Lightbulb, OctagonMinus } from "lucide-react";
+
 export const KEYBOARD_SHORTCUTS = {
   'b': 'bold',
   'i': 'italic',
@@ -37,3 +39,21 @@ export const HEADING_STYLES = {
   h5: { label: 'Heading 5', className: 'text-lg font-bold' },
   h6: { label: 'Heading 6', className: 'text-base font-bold' },
 };
+
+export const CODE_BLOCK_STYLES = [
+  {
+    label: 'Tip', value: 'tip', icon: <Lightbulb className="text-green-600 dark:text-green-400 h-5 w-5" />
+  },
+  {
+    label: 'Infor', value: 'info', icon: <Info className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+  },
+  {
+    label: 'Warning', value: 'warning', icon: <AlertTriangle className="text-yellow-600 dark:text-yellow-400 h-5 w-5" />
+  },
+  {
+    label: 'Danger', value: 'danger', icon: <OctagonMinus className="text-red-600 dark:text-red-400 h-5 w-5" />
+  },
+  {
+    label: 'Caution', value: 'caution', icon: <AlertCircle className="text-orange-600 dark:text-orange-400 h-5 w-5" />
+  },
+]

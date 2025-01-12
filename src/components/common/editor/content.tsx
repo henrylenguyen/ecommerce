@@ -1,26 +1,11 @@
+import AlertBlockPreview from '@/components/common/editor/alert/alertBlockPreview';
+import { escapeHtml, unescapeHtml } from '@/components/common/editor/utils';
 import { cn } from '@/utils';
-import { useEditor } from './context/EditorContext';
-import { useEffect, useCallback, useRef } from 'react';
-import { CodeBlockPreview } from './codeBlockPreview';
+import { useCallback, useEffect, useRef } from 'react';
 import ReactDOM from 'react-dom';
+import { CodeBlockPreview } from './code/codeBlockPreview';
+import { useEditor } from './context/EditorContext';
 
-const escapeHtml = (unsafe: string) => {
-  return unsafe
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#039;");
-};
-
-const unescapeHtml = (safe: string) => {
-  return safe
-    .replace(/&amp;/g, "&")
-    .replace(/&lt;/g, "<")
-    .replace(/&gt;/g, ">")
-    .replace(/&quot;/g, "\"")
-    .replace(/&#039;/g, "'");
-};
 
 const Content = () => {
   const { content, setContent, editorRef } = useEditor();
@@ -150,6 +135,89 @@ const Content = () => {
       }
     };
   }, [handleKeyDown, handleBlur, codeBlocksMap]);
+
+  const convertMarkdownToAlertBlock = useCallback((content: string) => {
+    const alertBlockRegex = /:::(tip|info|warning|danger|caution)\s+([\s\S]*?):::/g;
+    let html = content;
+    let match;
+
+    while ((match = alertBlockRegex.exec(content)) !== null) {
+      const [fullMatch, type, text] = match;
+      const blockId = `alert-block-${Math.random().toString(36).slice(2, 9)}`;
+      const alertBlockHtml = `<div class="alert-block-wrapper my-2" contenteditable="false" id="${blockId}"><div class="alert-preview" data-type="${type}" data-content="${escapeHtml(text.trim())}"></div></div>`;
+      html = html.replace(fullMatch, alertBlockHtml);
+    }
+    return html;
+  }, []);
+
+  const renderAlertBlocks = useCallback(() => {
+    if (!editorRef.current) return;
+
+    const alertBlocks = editorRef.current.getElementsByClassName('alert-block-wrapper');
+    const currentIds = new Set([...alertBlocks].map(block => block.id));
+
+    // Cleanup old roots
+    [...codeBlocksMap.keys()].forEach(id => {
+      if (!currentIds.has(id)) {
+        const root = codeBlocksMap.get(id);
+        if (root) {
+          root.unmount();
+          codeBlocksMap.delete(id);
+        }
+      }
+    });
+
+    // Only create roots for new blocks
+    Array.from(alertBlocks).forEach(block => {
+      const blockId = block.id;
+      if (!codeBlocksMap.has(blockId)) {
+        const alertPreview = block.querySelector('.alert-preview');
+
+        if (alertPreview && blockId) {
+          const type = alertPreview.getAttribute('data-type') || 'tip';
+          const escapedContent = alertPreview.getAttribute('data-content') || '';
+          const content = unescapeHtml(escapedContent);
+
+          const root = ReactDOM.createRoot(block);
+          codeBlocksMap.set(blockId, root);
+
+          const handleEdit = (newContent: string) => {
+            if (newContent !== content) {
+              alertPreview.setAttribute('data-content', escapeHtml(newContent));
+              if (editorRef.current) {
+                contentRef.current = editorRef.current.innerHTML;
+                handleInput();
+              }
+            }
+          };
+
+          root.render(
+            <AlertBlockPreview
+              key={blockId}
+              content={content}
+              type={type}
+              onEdit={handleEdit}
+            />
+          );
+        }
+      }
+    });
+  }, [codeBlocksMap, handleInput]);
+
+  useEffect(() => {
+    if (!editorRef.current || isProcessingRef.current) return;
+
+    const processedContent = convertMarkdownToCodeBlock(convertMarkdownToAlertBlock(content));
+    if (processedContent !== editorRef.current.innerHTML) {
+      isProcessingRef.current = true;
+      editorRef.current.innerHTML = processedContent;
+      renderCodeBlocks();
+      renderAlertBlocks();
+      contentRef.current = editorRef.current.innerHTML;
+      debouncedContentRef.current = contentRef.current;
+      isProcessingRef.current = false;
+    }
+  }, [content, convertMarkdownToCodeBlock, convertMarkdownToAlertBlock, renderCodeBlocks, renderAlertBlocks]);
 
   return (
     <div

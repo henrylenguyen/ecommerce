@@ -1,4 +1,6 @@
-import CodeInsertDialog from '@/components/common/editor/codeInsertDialog';
+import { IconCodeBlock } from '@/assets/images/icons';
+import AlertBlockDialog from '@/components/common/editor/alert/alertBlockDialog';
+import CodeInsertDialog from '@/components/common/editor/code/codeInsertDialog';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -26,6 +28,7 @@ import {
 import React, { useEffect } from 'react';
 import { HexColorPicker } from "react-colorful";
 import {
+  CODE_BLOCK_STYLES,
   HEADING_STYLES,
   KEYBOARD_SHORTCUTS,
   LIST_STYLES
@@ -33,7 +36,7 @@ import {
 import { useEditor } from './context/EditorContext';
 
 const Toolbar = () => {
-  const { executeCommand, editorRef } = useEditor();
+  const { executeCommand, editorRef, setContent, content } = useEditor();
   const [colorPickerOpen, setColorPickerOpen] = React.useState(false);
   const [selectedColor, setSelectedColor] = React.useState("#000000");
 
@@ -77,6 +80,17 @@ const Toolbar = () => {
     setSelectedColor(color);
     executeCommand('foreColor', color);
     setColorPickerOpen(false);
+  };
+
+  const handleAlertInsert = (type: string) => {
+    // Add a single newline if content doesn't end with one
+    const prefix = content.endsWith('\n') ? '' : '\n';
+    const alertBlock = `${prefix}:::${type}
+Click to edit this ${type} message
+:::
+`; // Single newline after closing tag
+    const updatedContent = content + alertBlock;
+    setContent(updatedContent);
   };
 
   return (
@@ -255,7 +269,31 @@ const Toolbar = () => {
       >
         <Quote size={16} />
       </Button>
+      <Popover>
+        <PopoverTrigger asChild>
+          <Button variant="ghost" size="sm" type="button">
+            <IconCodeBlock className='size-[16px]' />
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-40">
+          <div className="flex flex-col gap-1">
+            {CODE_BLOCK_STYLES.map((style) => (
+              <Button
+                key={style.value}
+                variant="ghost"
+                size="sm"
+                onClick={() => handleAlertInsert(style.value)}
+                className="justify-start w-full"
+                type="button"
+              >
+                <span className="mr-2">{style.icon}</span> {style.label}
+              </Button>
+            ))}
+          </div>
+        </PopoverContent>
+      </Popover>
       <CodeInsertDialog />
+
       {/* Other buttons remain the same */}
     </div>
   );

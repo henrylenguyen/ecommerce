@@ -32,7 +32,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { Code, Eye } from 'lucide-react';
 import { SetStateAction, useState } from 'react';
-import { useEditor } from "./context/EditorContext";
+import { useEditor } from "../context/EditorContext";
 
 const CodeInsertDialog = () => {
   const [code, setCode] = useState('');
