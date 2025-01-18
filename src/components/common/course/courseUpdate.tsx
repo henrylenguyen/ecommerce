@@ -5,6 +5,7 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 
+import { Editor } from "@/components/common";
 import { Button } from "@/components/ui/button";
 import {
   Form,
@@ -16,7 +17,6 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { useRouter } from "next/navigation";
-import { Editor } from "@/components/common";
 
 const formSchema = z.object({
   title: z.string().min(2, {
@@ -127,10 +127,15 @@ const CourseUpdate = () => {
             control={form.control}
             name="slug"
             render={({ field }) => (
-              <FormItem>
+              <FormItem className="col-span-2">
                 <FormLabel>Mô tả khóa học</FormLabel>
                 <FormControl>
-                  <Editor/>
+                  <Editor
+                    onChange={(markdown: string, html: string) => {
+                      console.log('Markdown:', markdown);
+                      console.log('HTML:', html);
+                    }}
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>

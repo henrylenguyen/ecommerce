@@ -51,8 +51,30 @@ h6{
   line-height: 1.1;
 }
 
+h1 {
+  font-size: 2.25rem;
+}
+h2 {
+  font-size: 1.875rem;
+}
+h3 {
+  font-size: 1.5rem;
+}
+h4 {
+  font-size: 1.25rem;
+}
+h5 {
+  font-size: 1rem;
+}
+h6 {
+  font-size: 0.875rem;
+}
+
 p {
   font-family: var(--font-roboto);
+}
+i {
+  font-style: italic;
 }
 
 @layer base {
@@ -128,6 +150,16 @@ p {
   body {
     @apply bg-ucademy-gray dark:bg-ucademy-grayDarkest;
   }
+  blockquote {
+  font-style: italic;
+  @apply border-l-4 border-solid border-ucademy-primary bg-pink-50 dark:bg-pink-900 text-pink-900 dark:text-pink-50;
+  padding-left: 1rem;
+  padding: 10px 20px;
+  margin: 1rem 0;
+  display: block;
+
+}
+
 }
 
 
