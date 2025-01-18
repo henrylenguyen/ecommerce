@@ -29,7 +29,6 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ children }) => {
       return <div className={className} >{children}</div>;
     },
     code: ({ inline, className, children, ...props }: { inline?: boolean, className?: string, children?: React.ReactNode }) => {
-      console.log("className:", className)
       const match = /language-(\w+)/.exec(className || '');
       const language = match ? match[1] : '';
       if (language === 'mermaid') {
