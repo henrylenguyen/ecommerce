@@ -297,34 +297,25 @@ const Content = () => {
         const blockquote = range.startContainer.parentElement?.closest('blockquote');
 
         if (blockquote) {
-          // Lấy vị trí hiện tại trong blockquote
           const currentNode = range.startContainer;
           const currentText = currentNode.textContent || '';
           const isAtEnd = range.startOffset === currentText.length;
-
-          // Kiểm tra xem dòng hiện tại có trống không
           const currentLine = currentNode.textContent?.trim() === '';
 
           if (currentLine && isAtEnd) {
             e.preventDefault();
-            // Tạo paragraph mới và thoát khỏi blockquote
             const p = document.createElement('p');
             p.innerHTML = '<br>';
             blockquote.parentNode?.insertBefore(p, blockquote.nextSibling);
-
-            // Xóa dòng trống trong blockquote
             if (currentNode.parentElement?.tagName === 'P') {
               currentNode.parentElement.remove();
             } else {
               currentNode.textContent = '';
             }
-
-            // Nếu blockquote trống, xóa nó
             if (blockquote.textContent?.trim() === '') {
               blockquote.remove();
             }
 
-            // Di chuyển con trỏ đến paragraph mới
             const newRange = document.createRange();
             newRange.setStart(p, 0);
             newRange.collapse(true);
@@ -339,12 +330,9 @@ const Content = () => {
 
             return;
           } else {
-            // Nếu không phải dòng trống, thêm một dòng mới trong blockquote
             e.preventDefault();
             const p = document.createElement('p');
             p.innerHTML = '<br>';
-
-            // Tìm paragraph hiện tại trong blockquote
             const currentP = range.startContainer.parentElement?.closest('p');
             if (currentP) {
               currentP.parentNode?.insertBefore(p, currentP.nextSibling);
@@ -352,7 +340,6 @@ const Content = () => {
               blockquote.appendChild(p);
             }
 
-            // Di chuyển con trỏ đến dòng mới
             const newRange = document.createRange();
             newRange.setStart(p, 0);
             newRange.collapse(true);
@@ -377,10 +364,20 @@ const Content = () => {
 
   const handleInput = useCallback(() => {
     if (!editorRef.current || isProcessingRef.current) return;
+
+    const selection = window.getSelection();
+    if (selection?.rangeCount) {
+      const blockquote = selection.anchorNode?.parentElement?.closest('blockquote');
+      setEditorState(prev => ({
+        ...prev,
+        isQuote: !!blockquote
+      }));
+    }
+
     contentRef.current = editorRef.current.innerHTML;
     updateEditorState();
     updateListState();
-  }, [updateEditorState, updateListState]);
+  }, [updateEditorState, updateListState, setEditorState]);
 
 
   const handleBlur = useCallback(() => {

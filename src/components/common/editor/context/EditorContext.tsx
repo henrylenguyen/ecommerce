@@ -33,16 +33,21 @@ export const EditorProvider: React.FC<{
       if (!selection || !selection.rangeCount) return;
 
       // Get current formatting
-      setEditorState(prev => ({
-        ...prev,
-        isBold: document.queryCommandState('bold'),
-        isItalic: document.queryCommandState('italic'),
-        isUnderline: document.queryCommandState('underline'),
-        isStrikethrough: document.queryCommandState('strikethrough'),
-        alignment: document.queryCommandState('justifyCenter') ? 'center' :
-          document.queryCommandState('justifyRight') ? 'right' :
-            document.queryCommandState('justifyFull') ? 'justify' : 'left',
-      }));
+      setEditorState(prev => {
+        const blockquote = selection.anchorNode?.parentElement?.closest('blockquote');
+
+        return {
+          ...prev,
+          isBold: document.queryCommandState('bold'),
+          isItalic: document.queryCommandState('italic'),
+          isUnderline: document.queryCommandState('underline'),
+          isStrikethrough: document.queryCommandState('strikethrough'),
+          isQuote: !!blockquote,
+          alignment: document.queryCommandState('justifyCenter') ? 'center' :
+            document.queryCommandState('justifyRight') ? 'right' :
+              document.queryCommandState('justifyFull') ? 'justify' : 'left',
+        };
+      });
 
       // Check for list state
       const parentList = selection.anchorNode?.parentElement?.closest('ul, ol');
