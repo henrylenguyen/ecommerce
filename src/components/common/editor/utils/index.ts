@@ -1,8 +1,8 @@
-import TurndownService from 'turndown';
-import { unified } from 'unified';
+import remarkGfm from 'remark-gfm';
 import remarkParse from 'remark-parse';
 import remarkStringify from 'remark-stringify';
-import remarkGfm from 'remark-gfm';
+import TurndownService from 'turndown';
+import { unified } from 'unified';
 
 // Custom turndown service configuration
 const turndownService = new TurndownService({
@@ -203,4 +203,16 @@ export const findCodeBlocks = (markdown: string) => {
   }
 
   return blocks;
+};
+
+export const getListLevel = (element: Element): number => {
+  let level = 0;
+  let parent = element.parentElement;
+  while (parent) {
+    if (parent.tagName.toLowerCase() === 'ul' || parent.tagName.toLowerCase() === 'ol') {
+      level++;
+    }
+    parent = parent.parentElement;
+  }
+  return level;
 };

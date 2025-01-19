@@ -1,5 +1,5 @@
 import AlertBlockPreview from '@/components/common/editor/alert/alertBlockPreview';
-import { escapeHtml, unescapeHtml } from '@/components/common/editor/utils';
+import { escapeHtml, getListLevel, unescapeHtml } from '@/components/common/editor/utils';
 import { checkForListMarker, createList } from '@/components/common/editor/utils/listUtils';
 import { cn } from '@/utils';
 import { useCallback, useEffect, useRef } from 'react';
@@ -53,17 +53,13 @@ const Content = () => {
     if (!listItem) return false;
 
     if (listItem.textContent?.trim() === '') {
+      e.preventDefault();
       const parentList = listItem.parentElement;
       if (!parentList) return false;
 
       const grandParentListItem = parentList.parentElement?.closest('li');
 
-      // Allow tabbing on empty items
-      if (e.key === 'Tab') return false;
-
-      if (grandParentListItem && e.shiftKey) {
-        e.preventDefault();
-        // Shift+Enter: Move current item to parent level
+      if (grandParentListItem) {
         const nextSibling = listItem.nextElementSibling;
         if (nextSibling) {
           const fragment = document.createDocumentFragment();
@@ -73,7 +69,7 @@ const Content = () => {
             fragment.appendChild(current);
             current = next;
           }
-          if (grandParentListItem.parentNode && fragment) {
+          if (grandParentListItem.parentNode) {
             grandParentListItem.parentNode.insertBefore(fragment, grandParentListItem.nextSibling);
           }
         }
@@ -84,30 +80,33 @@ const Content = () => {
         return true;
       }
 
-      // For empty items, convert to paragraph
-      if (!e.shiftKey) {
-        e.preventDefault();
-        const paragraph = document.createElement('p');
-        paragraph.innerHTML = '<br>';
-        parentList.parentNode?.insertBefore(paragraph, parentList.nextSibling);
-        listItem.remove();
+      const paragraph = document.createElement('p');
+      paragraph.innerHTML = '<br>';
+      parentList.parentNode?.insertBefore(paragraph, parentList.nextSibling);
+      listItem.remove();
 
-        // Remove empty list
-        if (!parentList.children.length) {
-          parentList.remove();
-        }
-
-        const newRange = document.createRange();
-        newRange.setStart(paragraph, 0);
-        newRange.collapse(true);
-        selection.removeAllRanges();
-        selection.addRange(newRange);
-        return true;
+      if (!parentList.children.length) {
+        parentList.remove();
       }
+
+      const newRange = document.createRange();
+      newRange.setStart(paragraph, 0);
+      newRange.collapse(true);
+      selection.removeAllRanges();
+      selection.addRange(newRange);
+
+      setEditorState(prev => ({
+        ...prev,
+        listType: null,
+        listStyle: 'disc',
+        listLevel: 0
+      }));
+
+      return true;
     }
 
     return false;
-  }, []);
+  }, [setEditorState]);
 
   const handleListMarkers = useCallback((e: KeyboardEvent) => {
     const selection = window.getSelection();
@@ -119,36 +118,32 @@ const Content = () => {
     let offset = range.startOffset;
 
     // Handle case when editor is empty or first typing
-    if (container === editorRef.current || !container.textContent) {
-      // Tạo paragraph mới với text node
-      const p = document.createElement('p');
-      const textNode = document.createTextNode('\u200B'); // Sử dụng zero-width space
-      p.appendChild(textNode);
+    if (container === editorRef.current || container.nodeType !== Node.TEXT_NODE) {
+      // Nếu editor rỗng và gõ "-"
+      if (e.key === '-') {
+        const p = document.createElement('p');
+        const textNode = document.createTextNode('-');
+        p.appendChild(textNode);
 
-      if (editorRef.current) {
-        if (!editorRef.current.firstChild) {
-          editorRef.current.appendChild(p);
-        } else {
-          editorRef.current.replaceChild(p, editorRef.current.firstChild);
+        if (editorRef.current) {
+          if (!editorRef.current.firstChild) {
+            editorRef.current.appendChild(p);
+          } else {
+            editorRef.current.replaceChild(p, editorRef.current.firstChild);
+          }
         }
+
+        range = document.createRange();
+        range.setStart(textNode, 1);
+        range.collapse(true);
+        selection.removeAllRanges();
+        selection.addRange(range);
+
+        container = textNode;
+        text = '-';
+        offset = 1;
       }
-
-      // Cập nhật selection vào text node mới
-      range = document.createRange();
-      range.setStart(textNode, 0);
-      range.collapse(true);
-      selection.removeAllRanges();
-      selection.addRange(range);
-
-      // Cập nhật các biến tham chiếu
-      container = textNode;
-      text = text || '';
-      offset = 0;
-
-      // Thêm ký tự đang gõ vào text node
-      const char = e.key === ' ' ? text : text + e.key;
-      textNode.textContent = char;
-      offset = char.length;
+      return false;
     }
 
     // Get containing block element
@@ -161,42 +156,43 @@ const Content = () => {
     // Check if we're in a list already
     if (blockContainer.closest('ul, ol')) return false;
 
-    const beforeSpace = text.substring(0, offset);
-    if (!beforeSpace) return false;
+    // Nếu nhấn space, kiểm tra text trước đó
+    if (e.key === ' ') {
+      const beforeSpace = text.substring(0, offset);
+      const result = checkForListMarker(beforeSpace);
 
-    const result = checkForListMarker(beforeSpace);
+      if (result?.shouldConvert) {
+        e.preventDefault();
 
-    if (result?.shouldConvert) {
-      e.preventDefault();
+        // Create new list
+        const list = createList(document, result.listType, result.listStyle);
+        const firstLi = list.querySelector('li');
+        if (firstLi) {
+          firstLi.textContent = '\u200B';
+        }
 
-      // Create new list
-      const list = createList(document, result.listType, result.listStyle);
-      const firstLi = list.querySelector('li');
-      if (firstLi) {
-        firstLi.textContent = '\u200B'; // Sử dụng zero-width space
+        // Insert list
+        blockContainer.replaceWith(list);
+
+        // Update editor state
+        setEditorState(prev => ({
+          ...prev,
+          listType: result.listType,
+          listStyle: result.listStyle,
+          listLevel: 0
+        }));
+
+        // Set cursor position
+        const newRange = document.createRange();
+        if (firstLi) {
+          newRange.setStart(firstLi, 0);
+          newRange.collapse(true);
+          selection.removeAllRanges();
+          selection.addRange(newRange);
+        }
+
+        return true;
       }
-
-      // Insert list
-      blockContainer.replaceWith(list);
-
-      // Update editor state
-      setEditorState(prev => ({
-        ...prev,
-        listType: result.listType,
-        listStyle: result.listStyle,
-        listLevel: 0
-      }));
-
-      // Set cursor position
-      const newRange = document.createRange();
-      if (firstLi) {
-        newRange.setStart(firstLi, 0);
-        newRange.collapse(true);
-        selection.removeAllRanges();
-        selection.addRange(newRange);
-      }
-
-      return true;
     }
 
     return false;
@@ -214,6 +210,9 @@ const Content = () => {
     const parentList = listItem.parentElement;
     if (!parentList) return;
 
+    const currentLevel = getListLevel(parentList);
+    const maxLevel = parentList.tagName.toLowerCase() === 'ol' ? 4 : 3;
+
     if (e.shiftKey) {
       // Shift+Tab: Move back to parent level
       const grandParentListItem = parentList.parentElement?.closest('li');
@@ -224,19 +223,22 @@ const Content = () => {
           listStyle: grandParentListItem.parentElement?.style.listStyleType || LIST_STYLES.unordered[0].value
         }));
       }
-    } else {
-      // Tab: Create or move to nested list
+    } else if (currentLevel < maxLevel) {
+      // Tab: Create or move to nested list if not at max level
       const prevListItem = listItem.previousElementSibling;
       if (prevListItem) {
         let targetList = prevListItem.querySelector(parentList.tagName.toLowerCase()) as HTMLElement;
         if (!targetList) {
           // Create new sublist with different style
           targetList = document.createElement(parentList.tagName.toLowerCase());
-          const currentStyleIndex = LIST_STYLES.unordered.findIndex(
+          const styles = parentList.tagName.toLowerCase() === 'ol'
+            ? LIST_STYLES.ordered
+            : LIST_STYLES.unordered;
+          const currentStyleIndex = styles.findIndex(
             style => style.value === parentList.style.listStyleType
           );
-          const nextStyleIndex = (currentStyleIndex + 1) % LIST_STYLES.unordered.length;
-          const newStyle = LIST_STYLES.unordered[nextStyleIndex].value;
+          const nextStyleIndex = (currentStyleIndex + 1) % styles.length;
+          const newStyle = styles[nextStyleIndex].value;
           targetList.style.listStyleType = newStyle;
           prevListItem.appendChild(targetList);
 
@@ -287,6 +289,7 @@ const Content = () => {
       debouncedContentRef.current = contentRef.current;
     }
   }, [setContent]);
+
   const convertMarkdownToCodeBlock = useCallback((content: string) => {
     const codeBlockRegex = /```(\w+)?\n([\s\S]*?)```/g;
     let html = content;
