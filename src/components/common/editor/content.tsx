@@ -1,26 +1,292 @@
 import AlertBlockPreview from '@/components/common/editor/alert/alertBlockPreview';
 import { escapeHtml, unescapeHtml } from '@/components/common/editor/utils';
+import { checkForListMarker, createList } from '@/components/common/editor/utils/listUtils';
 import { cn } from '@/utils';
 import { useCallback, useEffect, useRef } from 'react';
 import ReactDOM from 'react-dom';
 import { CodeBlockPreview } from './code/codeBlockPreview';
+import { LIST_STYLES } from './constants';
 import { useEditor } from './context/EditorContext';
 
-
 const Content = () => {
-  const { content, setContent, editorRef } = useEditor();
+  const { content, setContent, editorRef, updateEditorState, setEditorState } = useEditor();
   const contentRef = useRef(content);
   const isProcessingRef = useRef(false);
-  const codeBlocksMap = useRef(new Map()).current;
+  const codeBlocksMap = useRef(new Map<string, ReactDOM.Root>()).current;
   const debouncedContentRef = useRef(content);
 
-  const handleKeyDown = useCallback((e: KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      document.execCommand('insertLineBreak');
-      e.preventDefault();
+  const updateListState = useCallback(() => {
+    const selection = window.getSelection();
+    if (!selection?.rangeCount) return;
+
+    const range = selection.getRangeAt(0);
+    const listElement = range.startContainer.parentElement?.closest('ul, ol');
+
+    if (!listElement) {
+      setEditorState(prev => ({
+        ...prev,
+        listType: null,
+        listStyle: 'disc',
+        listLevel: 0
+      }));
+      return;
     }
+
+    const isOrdered = listElement.tagName.toLowerCase() === 'ol';
+    const listStyle = window.getComputedStyle(listElement).listStyleType;
+
+    setEditorState(prev => ({
+      ...prev,
+      listType: isOrdered ? 'ordered' : 'unordered',
+      listStyle: listStyle || (isOrdered ? 'decimal' : 'disc'),
+      listLevel: 0
+    }));
+  }, [setEditorState]);
+
+  const handleListEnter = useCallback((e: KeyboardEvent) => {
+    const selection = window.getSelection();
+    if (!selection?.rangeCount) return;
+
+    const range = selection.getRangeAt(0);
+    const listItem = range.startContainer.parentElement?.closest('li');
+
+    if (!listItem) return false;
+
+    if (listItem.textContent?.trim() === '') {
+      const parentList = listItem.parentElement;
+      if (!parentList) return false;
+
+      const grandParentListItem = parentList.parentElement?.closest('li');
+
+      // Allow tabbing on empty items
+      if (e.key === 'Tab') return false;
+
+      if (grandParentListItem && e.shiftKey) {
+        e.preventDefault();
+        // Shift+Enter: Move current item to parent level
+        const nextSibling = listItem.nextElementSibling;
+        if (nextSibling) {
+          const fragment = document.createDocumentFragment();
+          let current = nextSibling;
+          while (current) {
+            const next = current.nextElementSibling;
+            fragment.appendChild(current);
+            current = next;
+          }
+          if (grandParentListItem.parentNode && fragment) {
+            grandParentListItem.parentNode.insertBefore(fragment, grandParentListItem.nextSibling);
+          }
+        }
+        listItem.remove();
+        if (!parentList.children.length) {
+          parentList.remove();
+        }
+        return true;
+      }
+
+      // For empty items, convert to paragraph
+      if (!e.shiftKey) {
+        e.preventDefault();
+        const paragraph = document.createElement('p');
+        paragraph.innerHTML = '<br>';
+        parentList.parentNode?.insertBefore(paragraph, parentList.nextSibling);
+        listItem.remove();
+
+        // Remove empty list
+        if (!parentList.children.length) {
+          parentList.remove();
+        }
+
+        const newRange = document.createRange();
+        newRange.setStart(paragraph, 0);
+        newRange.collapse(true);
+        selection.removeAllRanges();
+        selection.addRange(newRange);
+        return true;
+      }
+    }
+
+    return false;
   }, []);
 
+  const handleListMarkers = useCallback((e: KeyboardEvent) => {
+    const selection = window.getSelection();
+    if (!selection?.rangeCount) return false;
+
+    let range = selection.getRangeAt(0);
+    let container = range.startContainer;
+    let text = container.textContent || '';
+    let offset = range.startOffset;
+
+    // Handle case when editor is empty or first typing
+    if (container === editorRef.current || !container.textContent) {
+      // Tạo paragraph mới với text node
+      const p = document.createElement('p');
+      const textNode = document.createTextNode('\u200B'); // Sử dụng zero-width space
+      p.appendChild(textNode);
+
+      if (editorRef.current) {
+        if (!editorRef.current.firstChild) {
+          editorRef.current.appendChild(p);
+        } else {
+          editorRef.current.replaceChild(p, editorRef.current.firstChild);
+        }
+      }
+
+      // Cập nhật selection vào text node mới
+      range = document.createRange();
+      range.setStart(textNode, 0);
+      range.collapse(true);
+      selection.removeAllRanges();
+      selection.addRange(range);
+
+      // Cập nhật các biến tham chiếu
+      container = textNode;
+      text = text || '';
+      offset = 0;
+
+      // Thêm ký tự đang gõ vào text node
+      const char = e.key === ' ' ? text : text + e.key;
+      textNode.textContent = char;
+      offset = char.length;
+    }
+
+    // Get containing block element
+    const blockContainer = container.nodeType === Node.TEXT_NODE
+      ? container.parentElement
+      : container as Element;
+
+    if (!blockContainer) return false;
+
+    // Check if we're in a list already
+    if (blockContainer.closest('ul, ol')) return false;
+
+    const beforeSpace = text.substring(0, offset);
+    if (!beforeSpace) return false;
+
+    const result = checkForListMarker(beforeSpace);
+
+    if (result?.shouldConvert) {
+      e.preventDefault();
+
+      // Create new list
+      const list = createList(document, result.listType, result.listStyle);
+      const firstLi = list.querySelector('li');
+      if (firstLi) {
+        firstLi.textContent = '\u200B'; // Sử dụng zero-width space
+      }
+
+      // Insert list
+      blockContainer.replaceWith(list);
+
+      // Update editor state
+      setEditorState(prev => ({
+        ...prev,
+        listType: result.listType,
+        listStyle: result.listStyle,
+        listLevel: 0
+      }));
+
+      // Set cursor position
+      const newRange = document.createRange();
+      if (firstLi) {
+        newRange.setStart(firstLi, 0);
+        newRange.collapse(true);
+        selection.removeAllRanges();
+        selection.addRange(newRange);
+      }
+
+      return true;
+    }
+
+    return false;
+  }, [editorRef, setEditorState]);
+
+  const handleTab = useCallback((e: KeyboardEvent) => {
+    e.preventDefault();
+
+    const selection = window.getSelection();
+    if (!selection?.rangeCount) return;
+
+    const listItem = selection.anchorNode?.parentElement?.closest('li');
+    if (!listItem) return;
+
+    const parentList = listItem.parentElement;
+    if (!parentList) return;
+
+    if (e.shiftKey) {
+      // Shift+Tab: Move back to parent level
+      const grandParentListItem = parentList.parentElement?.closest('li');
+      if (grandParentListItem?.parentElement) {
+        setEditorState(prev => ({
+          ...prev,
+          listLevel: Math.max(0, prev.listLevel - 1),
+          listStyle: grandParentListItem.parentElement?.style.listStyleType || LIST_STYLES.unordered[0].value
+        }));
+      }
+    } else {
+      // Tab: Create or move to nested list
+      const prevListItem = listItem.previousElementSibling;
+      if (prevListItem) {
+        let targetList = prevListItem.querySelector(parentList.tagName.toLowerCase()) as HTMLElement;
+        if (!targetList) {
+          // Create new sublist with different style
+          targetList = document.createElement(parentList.tagName.toLowerCase());
+          const currentStyleIndex = LIST_STYLES.unordered.findIndex(
+            style => style.value === parentList.style.listStyleType
+          );
+          const nextStyleIndex = (currentStyleIndex + 1) % LIST_STYLES.unordered.length;
+          const newStyle = LIST_STYLES.unordered[nextStyleIndex].value;
+          targetList.style.listStyleType = newStyle;
+          prevListItem.appendChild(targetList);
+
+          setEditorState(prev => ({
+            ...prev,
+            listLevel: prev.listLevel + 1,
+            listStyle: newStyle
+          }));
+        }
+        targetList.appendChild(listItem);
+      }
+    }
+
+    updateEditorState();
+  }, [updateEditorState, setEditorState]);
+
+  const handleKeyDown = useCallback((e: KeyboardEvent) => {
+    if (!editorRef.current) return;
+
+    if (e.key === 'Tab') {
+      handleTab(e);
+      return;
+    }
+
+    if (e.key === 'Enter' && !e.shiftKey) {
+      if (handleListEnter(e)) return;
+    }
+
+    if (e.key === ' ') {
+      if (handleListMarkers(e)) return;
+    }
+
+    setTimeout(updateEditorState, 0);
+  }, [handleListEnter, handleListMarkers, handleTab, updateEditorState]);
+
+
+  const handleInput = useCallback(() => {
+    if (!editorRef.current || isProcessingRef.current) return;
+    contentRef.current = editorRef.current.innerHTML;
+    updateEditorState();
+    updateListState();
+  }, [updateEditorState, updateListState]);
+
+
+  const handleBlur = useCallback(() => {
+    if (contentRef.current !== debouncedContentRef.current) {
+      setContent(contentRef.current);
+      debouncedContentRef.current = contentRef.current;
+    }
+  }, [setContent]);
   const convertMarkdownToCodeBlock = useCallback((content: string) => {
     const codeBlockRegex = /```(\w+)?\n([\s\S]*?)```/g;
     let html = content;
@@ -94,48 +360,6 @@ const Content = () => {
     });
   }, [codeBlocksMap]);
 
-  const handleInput = useCallback(() => {
-    if (!editorRef.current || isProcessingRef.current) return;
-    contentRef.current = editorRef.current.innerHTML;
-  }, []);
-
-  const handleBlur = useCallback(() => {
-    if (contentRef.current !== debouncedContentRef.current) {
-      setContent(contentRef.current);
-      debouncedContentRef.current = contentRef.current;
-    }
-  }, [setContent]);
-
-  useEffect(() => {
-    if (!editorRef.current || isProcessingRef.current) return;
-
-    const processedContent = convertMarkdownToCodeBlock(content);
-    if (processedContent !== editorRef.current.innerHTML) {
-      isProcessingRef.current = true;
-      editorRef.current.innerHTML = processedContent;
-      renderCodeBlocks();
-      contentRef.current = editorRef.current.innerHTML;
-      debouncedContentRef.current = contentRef.current;
-      isProcessingRef.current = false;
-    }
-  }, [content, convertMarkdownToCodeBlock, renderCodeBlocks]);
-
-  useEffect(() => {
-    if (!editorRef.current) return;
-
-    editorRef.current.addEventListener('keydown', handleKeyDown);
-    editorRef.current.addEventListener('blur', handleBlur);
-
-    return () => {
-      if (editorRef.current) {
-        editorRef.current.removeEventListener('keydown', handleKeyDown);
-        editorRef.current.removeEventListener('blur', handleBlur);
-        codeBlocksMap.forEach(root => root.unmount());
-        codeBlocksMap.clear();
-      }
-    };
-  }, [handleKeyDown, handleBlur, codeBlocksMap]);
-
   const convertMarkdownToAlertBlock = useCallback((content: string) => {
     const alertBlockRegex = /:::(tip|info|warning|danger|caution)\s+([\s\S]*?):::/g;
     let html = content;
@@ -156,7 +380,6 @@ const Content = () => {
     const alertBlocks = editorRef.current.getElementsByClassName('alert-block-wrapper');
     const currentIds = new Set([...alertBlocks].map(block => block.id));
 
-    // Cleanup old roots
     [...codeBlocksMap.keys()].forEach(id => {
       if (!currentIds.has(id)) {
         const root = codeBlocksMap.get(id);
@@ -167,7 +390,6 @@ const Content = () => {
       }
     });
 
-    // Only create roots for new blocks
     Array.from(alertBlocks).forEach(block => {
       const blockId = block.id;
       if (!codeBlocksMap.has(blockId)) {
@@ -195,14 +417,28 @@ const Content = () => {
             <AlertBlockPreview
               key={blockId}
               content={content}
-              type={type}
+              type={type as 'tip' | 'info' | 'warning' | 'danger' | 'caution'}
               onEdit={handleEdit}
             />
           );
         }
       }
     });
-  }, [codeBlocksMap, handleInput]);
+  }, [codeBlocksMap, handleInput, editorRef]);
+
+  useEffect(() => {
+    if (!editorRef.current) return;
+
+    editorRef.current.addEventListener('keydown', handleKeyDown);
+    editorRef.current.addEventListener('blur', handleBlur);
+
+    return () => {
+      if (editorRef.current) {
+        editorRef.current.removeEventListener('keydown', handleKeyDown);
+        editorRef.current.removeEventListener('blur', handleBlur);
+      }
+    };
+  }, [handleKeyDown, handleBlur]);
 
   useEffect(() => {
     if (!editorRef.current || isProcessingRef.current) return;
@@ -219,15 +455,30 @@ const Content = () => {
     }
   }, [content, convertMarkdownToCodeBlock, convertMarkdownToAlertBlock, renderCodeBlocks, renderAlertBlocks]);
 
+  useEffect(() => {
+    if (editorRef.current && !editorRef.current.firstChild) {
+      const p = document.createElement('p');
+      const textNode = document.createTextNode('\u200B');
+      p.appendChild(textNode);
+      editorRef.current.appendChild(p);
+    }
+  }, []);
+
   return (
     <div
       ref={editorRef}
       contentEditable
+      role="textbox"
+      aria-multiline="true"
+      tabIndex={0}
       onInput={handleInput}
+      onKeyDown={handleKeyDown}
       className={cn(
         "w-full min-h-[200px] p-4 focus:outline-none",
         "overflow-y-auto whitespace-pre-wrap",
-        "prose prose-sm max-w-none"
+        "prose prose-sm max-w-none",
+        "[&>ul]:pl-5 [&>ol]:pl-5",
+        "[&_ul]:pl-5 [&_ol]:pl-5"
       )}
       suppressContentEditableWarning={true}
     />

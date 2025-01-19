@@ -1,5 +1,5 @@
 import { IconCodeBlock } from '@/assets/images/icons';
-import AlertBlockDialog from '@/components/common/editor/alert/alertBlockDialog';
+// import AlertBlockDialog from '@/components/common/editor/alert/alertBlockDialog';
 import CodeInsertDialog from '@/components/common/editor/code/codeInsertDialog';
 import { Button } from '@/components/ui/button';
 import {
@@ -13,13 +13,16 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import { cn } from '@/utils';
 import {
   AlignCenter,
   AlignJustify,
   AlignLeft,
   AlignRight,
-  Bold, Italic,
-  List, ListOrdered,
+  Bold,
+  Italic,
+  List,
+  ListOrdered,
   Quote,
   Strikethrough,
   Type,
@@ -36,9 +39,18 @@ import {
 import { useEditor } from './context/EditorContext';
 
 const Toolbar = () => {
-  const { executeCommand, editorRef, setContent, content } = useEditor();
+  const { executeCommand, editorRef, setContent, content, editorState, updateEditorState } = useEditor();
   const [colorPickerOpen, setColorPickerOpen] = React.useState(false);
   const [selectedColor, setSelectedColor] = React.useState("#000000");
+
+  useEffect(() => {
+    const handleSelectionChange = () => {
+      updateEditorState();
+    };
+
+    document.addEventListener('selectionchange', handleSelectionChange);
+    return () => document.removeEventListener('selectionchange', handleSelectionChange);
+  }, [updateEditorState]);
 
   useEffect(() => {
     const handleKeyboard = (e: KeyboardEvent) => {
@@ -53,28 +65,27 @@ const Toolbar = () => {
   }, [executeCommand]);
 
   const handleHeadingChange = (tag: string) => {
-    // Fix for formatBlock command
     const blockTag = `<${tag}>`;
     executeCommand('formatBlock', blockTag);
   };
 
   const handleListStyle = (listType: 'ordered' | 'unordered', style: string) => {
-    // Fix for list styling
+    const selection = window.getSelection();
+    if (!selection || !selection.rangeCount) return;
+
     if (listType === 'ordered') {
       document.execCommand('insertOrderedList', false);
-      const list = editorRef.current?.querySelector('ol');
-      if (list) {
-        list.style.listStyleType = style;
-      }
     } else {
       document.execCommand('insertUnorderedList', false);
-      const list = editorRef.current?.querySelector('ul');
-      if (list) {
-        list.style.listStyleType = style;
-      }
     }
-  };
 
+    const list = selection.anchorNode?.parentElement?.closest(listType === 'ordered' ? 'ol' : 'ul');
+    if (list) {
+      list.style.listStyleType = style;
+    }
+
+    updateEditorState();
+  };
 
   const handleColorChange = (color: string) => {
     setSelectedColor(color);
@@ -83,12 +94,11 @@ const Toolbar = () => {
   };
 
   const handleAlertInsert = (type: string) => {
-    // Add a single newline if content doesn't end with one
     const prefix = content.endsWith('\n') ? '' : '\n';
     const alertBlock = `${prefix}:::${type}
 Click to edit this ${type} message
 :::
-`; // Single newline after closing tag
+`;
     const updatedContent = content + alertBlock;
     setContent(updatedContent);
   };
@@ -99,7 +109,7 @@ Click to edit this ${type} message
         <DropdownMenuTrigger asChild>
           <Button variant="ghost" size="sm" className="px-2" type="button">
             <Type size={16} className="mr-1" />
-            Paragraph
+            {editorState.currentHeading || 'Paragraph'}
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent>
@@ -107,7 +117,10 @@ Click to edit this ${type} message
             <DropdownMenuItem
               key={tag}
               onClick={() => handleHeadingChange(tag)}
-              className={style.className}
+              className={cn(
+                style.className,
+                editorState.currentHeading === tag && "bg-accent"
+              )}
             >
               {style.label}
             </DropdownMenuItem>
@@ -121,33 +134,40 @@ Click to edit this ${type} message
         variant="ghost"
         size="sm"
         onClick={() => executeCommand('bold')}
+        className={cn(editorState.isBold && "bg-accent")}
         type="button"
         title="Bold (Ctrl+B)"
       >
         <Bold size={16} />
       </Button>
+
       <Button
         variant="ghost"
         size="sm"
         onClick={() => executeCommand('italic')}
+        className={cn(editorState.isItalic && "bg-accent")}
         type="button"
         title="Italic (Ctrl+I)"
       >
         <Italic size={16} />
       </Button>
+
       <Button
         variant="ghost"
         size="sm"
         onClick={() => executeCommand('underline')}
+        className={cn(editorState.isUnderline && "bg-accent")}
         type="button"
         title="Underline (Ctrl+U)"
       >
         <Underline size={16} />
       </Button>
+
       <Button
         variant="ghost"
         size="sm"
         onClick={() => executeCommand('strikeThrough')}
+        className={cn(editorState.isStrikethrough && "bg-accent")}
         type="button"
       >
         <Strikethrough size={16} />
@@ -157,7 +177,12 @@ Click to edit this ${type} message
 
       <Popover>
         <PopoverTrigger asChild>
-          <Button variant="ghost" size="sm" type="button">
+          <Button
+            variant="ghost"
+            size="sm"
+            className={cn(editorState.listType === 'unordered' && "bg-accent")}
+            type="button"
+          >
             <List size={16} />
           </Button>
         </PopoverTrigger>
@@ -169,7 +194,12 @@ Click to edit this ${type} message
                 variant="ghost"
                 size="sm"
                 onClick={() => handleListStyle('unordered', style.value)}
-                className="justify-start"
+                className={cn(
+                  "justify-start",
+                  editorState.listType === 'unordered' &&
+                  editorState.listStyle === style.value &&
+                  "bg-accent"
+                )}
                 type="button"
               >
                 <span className="mr-2">{style.icon}</span> {style.label}
@@ -181,7 +211,12 @@ Click to edit this ${type} message
 
       <Popover>
         <PopoverTrigger asChild>
-          <Button variant="ghost" size="sm" type="button">
+          <Button
+            variant="ghost"
+            size="sm"
+            className={cn(editorState.listType === 'ordered' && "bg-accent")}
+            type="button"
+          >
             <ListOrdered size={16} />
           </Button>
         </PopoverTrigger>
@@ -193,7 +228,12 @@ Click to edit this ${type} message
                 variant="ghost"
                 size="sm"
                 onClick={() => handleListStyle('ordered', style.value)}
-                className="justify-start"
+                className={cn(
+                  "justify-start",
+                  editorState.listType === 'ordered' &&
+                  editorState.listStyle === style.value &&
+                  "bg-accent"
+                )}
                 type="button"
               >
                 <span className="mr-2">{style.icon}</span> {style.label}
@@ -230,30 +270,37 @@ Click to edit this ${type} message
         variant="ghost"
         size="sm"
         onClick={() => executeCommand('justifyLeft')}
+        className={cn(editorState.alignment === 'left' && "bg-accent")}
         type="button"
       >
         <AlignLeft size={16} />
       </Button>
+
       <Button
         variant="ghost"
         size="sm"
         onClick={() => executeCommand('justifyCenter')}
+        className={cn(editorState.alignment === 'center' && "bg-accent")}
         type="button"
       >
         <AlignCenter size={16} />
       </Button>
+
       <Button
         variant="ghost"
         size="sm"
         onClick={() => executeCommand('justifyRight')}
+        className={cn(editorState.alignment === 'right' && "bg-accent")}
         type="button"
       >
         <AlignRight size={16} />
       </Button>
+
       <Button
         variant="ghost"
         size="sm"
         onClick={() => executeCommand('justifyFull')}
+        className={cn(editorState.alignment === 'justify' && "bg-accent")}
         type="button"
       >
         <AlignJustify size={16} />
@@ -265,10 +312,12 @@ Click to edit this ${type} message
         variant="ghost"
         size="sm"
         onClick={() => executeCommand('formatBlock', '<blockquote>')}
+        className={cn(editorState.isQuote && "bg-accent")}
         type="button"
       >
         <Quote size={16} />
       </Button>
+
       <Popover>
         <PopoverTrigger asChild>
           <Button variant="ghost" size="sm" type="button">
@@ -292,9 +341,9 @@ Click to edit this ${type} message
           </div>
         </PopoverContent>
       </Popover>
-      <CodeInsertDialog />
 
-      {/* Other buttons remain the same */}
+      <CodeInsertDialog />
+      {/* <AlertBlockDialog /> */}
     </div>
   );
 };
