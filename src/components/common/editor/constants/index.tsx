@@ -1,4 +1,4 @@
-import { AlertCircle, AlertTriangle, CheckCircle2, Info, Lightbulb, OctagonMinus } from "lucide-react";
+import { AlertCircle, AlertTriangle, Info, Lightbulb, OctagonMinus } from "lucide-react";
 
 export const KEYBOARD_SHORTCUTS = {
   'b': 'bold',
