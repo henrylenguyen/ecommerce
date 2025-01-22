@@ -10,7 +10,7 @@ export const useAlertTypeCompletion = () => {
   const [triggerNode, setTriggerNode] = useState<Node | null>(null);
 
   useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
+    const handleClickOutside = () => {
       if (showTypeDropdown) {
         setShowTypeDropdown(false);
         setCurrentRange(null);

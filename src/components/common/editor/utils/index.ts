@@ -13,8 +13,9 @@ const turndownService = new TurndownService({
   strongDelimiter: '**',
   br: '\n',
   blankReplacement: function (content, node) {
-    return node.isBlock ? '\n\n' : '';
+    return node instanceof HTMLElement && node.style.display === 'block' ? '\n\n' : '';
   }
+  
 });
 
 // Helper function to preserve code blocks before markdown conversion

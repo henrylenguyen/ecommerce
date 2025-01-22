@@ -27,7 +27,7 @@ const Content: React.FC = () => {
     editorRef,
     setEditorState,
     updateEditorState,
-  });
+  }) as unknown as { handleKeyDown: React.KeyboardEventHandler<HTMLDivElement> };
 
   const handleInput = useCallback(() => {
     if (!editorRef.current || isProcessingRef.current) return;
@@ -70,7 +70,7 @@ const Content: React.FC = () => {
       debouncedContentRef.current = contentRef.current;
       isProcessingRef.current = false;
     }
-  }, [content, convertMarkdownToCodeBlock, convertMarkdownToAlertBlock, renderCodeBlocks, renderAlertBlocks, handleInput]);
+  }, [content, convertMarkdownToCodeBlock, convertMarkdownToAlertBlock, renderCodeBlocks, renderAlertBlocks, handleInput, editorRef]);
 
   useEffect(() => {
     if (editorRef.current && !editorRef.current.firstChild) {
@@ -79,7 +79,7 @@ const Content: React.FC = () => {
       p.appendChild(textNode);
       editorRef.current.appendChild(p);
     }
-  }, []);
+  }, [editorRef]);
 
   return (
     <div

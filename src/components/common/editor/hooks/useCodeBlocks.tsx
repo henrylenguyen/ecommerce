@@ -2,10 +2,10 @@
 import { CodeBlockPreview } from '@/components/common/editor/code/codeBlockPreview';
 import { escapeHtml, unescapeHtml } from '@/components/common/editor/utils';
 import { useCallback, useRef } from 'react';
-import ReactDOM from 'react-dom';
+import { Root, createRoot } from 'react-dom/client';
 
 export const useCodeBlocks = () => {
-  const codeBlocksMap = useRef(new Map<string, ReactDOM.Root>()).current;
+  const codeBlocksMap = useRef(new Map<string, Root>()).current;
 
   const convertMarkdownToCodeBlock = useCallback((content: string) => {
     const codeBlockRegex = /```(\w+)?\n([\s\S]*?)```/g;
@@ -49,7 +49,7 @@ export const useCodeBlocks = () => {
 
         let root = codeBlocksMap.get(blockId);
         if (!root) {
-          root = ReactDOM.createRoot(block);
+          root = createRoot(block);
           codeBlocksMap.set(blockId, root);
         }
 

@@ -26,6 +26,11 @@ export const EditorProvider: React.FC<{
     const [editorState, setEditorState] = useState<EditorState>(defaultEditorState);
     const editorRef = useRef<HTMLDivElement>(null);
 
+    const handleContentChange = React.useCallback((newContent: string) => {
+      setContent(newContent);
+      onChange?.(newContent);
+    }, [onChange]);
+
     const updateEditorState = React.useCallback(() => {
       if (!editorRef.current) return;
 
@@ -84,12 +89,9 @@ export const EditorProvider: React.FC<{
         updateEditorState();
         handleContentChange(editorRef.current.innerHTML);
       }
-    }, [updateEditorState]);
+    }, [handleContentChange, updateEditorState]);
 
-    const handleContentChange = React.useCallback((newContent: string) => {
-      setContent(newContent);
-      onChange?.(newContent);
-    }, [onChange]);
+
 
     const value = React.useMemo(() => ({
       content,

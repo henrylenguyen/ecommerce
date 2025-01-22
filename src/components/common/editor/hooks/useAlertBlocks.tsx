@@ -2,10 +2,10 @@
 import AlertBlockPreview from '@/components/common/editor/alert/alertBlockPreview';
 import { escapeHtml, unescapeHtml } from '@/components/common/editor/utils';
 import { useCallback, useRef } from 'react';
-import ReactDOM from 'react-dom';
+import { Root, createRoot } from 'react-dom/client';
 
 export const useAlertBlocks = () => {
-  const alertBlocksMap = useRef(new Map<string, ReactDOM.Root>()).current;
+  const alertBlocksMap = useRef(new Map<string, Root>()).current; 
 
   const convertMarkdownToAlertBlock = useCallback((content: string) => {
     const alertBlockRegex = /:::(tip|info|warning|danger|caution)\s+([\s\S]*?):::/g;
@@ -51,7 +51,7 @@ export const useAlertBlocks = () => {
           const escapedContent = alertPreview.getAttribute('data-content') || '';
           const content = unescapeHtml(escapedContent);
 
-          const root = ReactDOM.createRoot(block);
+          const root = createRoot(block);
           alertBlocksMap.set(blockId, root);
 
           root.render(
