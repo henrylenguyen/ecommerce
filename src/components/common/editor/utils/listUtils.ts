@@ -17,72 +17,37 @@ export interface ListConversionResult {
   text: string;
 }
 
-export const checkForListMarker = (text: string): ListConversionResult | null => {
+export const checkForListMarker = (text: string): { shouldConvert: boolean; listType: 'ordered' | 'unordered'; listStyle: string } | null => {
+  // Trim whitespace
   const trimmedText = text.trim();
 
-  // Kiểm tra unordered list markers
-  if (LIST_MARKERS.unordered.includes(trimmedText)) {
+  // Check for unordered list markers
+  if (trimmedText === '-' || trimmedText === '*' || trimmedText === '+') {
     return {
       shouldConvert: true,
       listType: 'unordered',
-      listStyle: 'disc',
-      text: ''
+      listStyle: 'disc'
     };
   }
 
-  // Kiểm tra ordered list markers với số (1., 2., etc)
-  if (/^\d+\.$/.test(trimmedText)) {
+  // Check for ordered list markers (e.g., "1.", "1)", "(1)")
+  const orderedListRegex = /^(\d+)[.)]$/;
+  if (orderedListRegex.test(trimmedText)) {
     return {
       shouldConvert: true,
       listType: 'ordered',
-      listStyle: 'decimal',
-      text: ''
-    };
-  }
-
-  // Kiểm tra lowercase letters (a., b., etc)
-  if (/^[a-z]\.$/.test(trimmedText)) {
-    return {
-      shouldConvert: true,
-      listType: 'ordered',
-      listStyle: 'lower-alpha',
-      text: ''
-    };
-  }
-
-  // Kiểm tra uppercase letters (A., B., etc)
-  if (/^[A-Z]\.$/.test(trimmedText)) {
-    return {
-      shouldConvert: true,
-      listType: 'ordered',
-      listStyle: 'upper-alpha',
-      text: ''
-    };
-  }
-
-  // Kiểm tra roman numerals (i., ii., etc)
-  if (/^[ivxlcdm]+\.$/i.test(trimmedText)) {
-    return {
-      shouldConvert: true,
-      listType: 'ordered',
-      listStyle: 'lower-roman',
-      text: ''
+      listStyle: 'decimal'
     };
   }
 
   return null;
 };
 
-export const createList = (
-  document: Document,
-  listType: 'ordered' | 'unordered',
-  listStyle: string
-): HTMLElement => {
-  const list = document.createElement(listType === 'ordered' ? 'ol' : 'ul');
-  list.style.listStyleType = listStyle;
-  const item = document.createElement('li');
-  item.innerHTML = '<br>';
-  list.appendChild(item);
+export const createList = (doc: Document, type: 'ordered' | 'unordered', style: string): HTMLElement => {
+  const list = doc.createElement(type === 'ordered' ? 'ol' : 'ul');
+  list.style.listStyleType = style;
+  const li = doc.createElement('li');
+  list.appendChild(li);
   return list;
 };
 

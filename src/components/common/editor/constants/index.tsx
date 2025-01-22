@@ -25,8 +25,9 @@ export const LIST_STYLES = {
   ordered: [
     { label: 'Numbers', value: 'decimal', icon: '1.' },
     { label: 'Lowercase', value: 'lower-alpha', icon: 'a.' },
-    { label: 'Uppercase', value: 'upper-alpha', icon: 'A.' },
     { label: 'Roman', value: 'lower-roman', icon: 'i.' },
+    { label: 'Uppercase', value: 'upper-roman', icon: 'I.' },
+    { label: 'Uppercase', value: 'upper-alpha', icon: 'A.' },
   ],
 };
 

@@ -18,7 +18,6 @@ const Editor: React.FC<EditorProps> = ({
   className
 }) => {
   const handleContentChange = (html: string) => {
-    console.log("html:", html)
     if (onChange) {
       const markdown = htmlToMarkdown(html);
       onChange(markdown, html);

@@ -27,6 +27,7 @@ const formSchema = z.object({
 
 const CourseUpdate = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  console.log("setIsSubmitting:", setIsSubmitting)
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -38,6 +39,7 @@ const CourseUpdate = () => {
   const router = useRouter();
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
+  console.log("values:", values)
 
   }
 
@@ -134,6 +136,7 @@ const CourseUpdate = () => {
                     onChange={(markdown: string, html: string) => {
                       console.log('Markdown:', markdown);
                       console.log('HTML:', html);
+                      console.log(field)
                     }}
                   />
                 </FormControl>

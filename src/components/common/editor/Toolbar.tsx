@@ -39,7 +39,7 @@ import {
 import { useEditor } from './context/EditorContext';
 
 const Toolbar = () => {
-  const { executeCommand, editorRef, setContent, content, editorState, updateEditorState } = useEditor();
+  const { executeCommand, setContent, content, editorState, updateEditorState } = useEditor();
   const [colorPickerOpen, setColorPickerOpen] = React.useState(false);
   const [selectedColor, setSelectedColor] = React.useState("#000000");
 
@@ -93,16 +93,13 @@ const Toolbar = () => {
     setColorPickerOpen(false);
   };
 
-  const handleAlertInsert = (type: string) => {
+  const handleAlertInsert = (type: (typeof CODE_BLOCK_STYLES)[number]['value']) => {
     const prefix = content.endsWith('\n') ? '' : '\n';
-    const alertBlock = `${prefix}:::${type}
-Click to edit this ${type} message
-:::
-`;
+    const defaultMessage = `Click to edit this ${type} message`;
+    const alertBlock = `${prefix}:::${type}\n${defaultMessage}\n:::`;
     const updatedContent = content + alertBlock;
     setContent(updatedContent);
   };
-
   return (
     <div className="border-b p-2 flex gap-1 flex-wrap items-center">
       <DropdownMenu>

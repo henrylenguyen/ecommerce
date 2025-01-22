@@ -26,6 +26,11 @@ export const EditorProvider: React.FC<{
     const [editorState, setEditorState] = useState<EditorState>(defaultEditorState);
     const editorRef = useRef<HTMLDivElement>(null);
 
+    const handleContentChange = React.useCallback((newContent: string) => {
+      setContent(newContent);
+      onChange?.(newContent);
+    }, [onChange]);
+
     const updateEditorState = React.useCallback(() => {
       if (!editorRef.current) return;
 
@@ -33,16 +38,21 @@ export const EditorProvider: React.FC<{
       if (!selection || !selection.rangeCount) return;
 
       // Get current formatting
-      setEditorState(prev => ({
-        ...prev,
-        isBold: document.queryCommandState('bold'),
-        isItalic: document.queryCommandState('italic'),
-        isUnderline: document.queryCommandState('underline'),
-        isStrikethrough: document.queryCommandState('strikethrough'),
-        alignment: document.queryCommandState('justifyCenter') ? 'center' :
-          document.queryCommandState('justifyRight') ? 'right' :
-            document.queryCommandState('justifyFull') ? 'justify' : 'left',
-      }));
+      setEditorState(prev => {
+        const blockquote = selection.anchorNode?.parentElement?.closest('blockquote');
+
+        return {
+          ...prev,
+          isBold: document.queryCommandState('bold'),
+          isItalic: document.queryCommandState('italic'),
+          isUnderline: document.queryCommandState('underline'),
+          isStrikethrough: document.queryCommandState('strikethrough'),
+          isQuote: !!blockquote,
+          alignment: document.queryCommandState('justifyCenter') ? 'center' :
+            document.queryCommandState('justifyRight') ? 'right' :
+              document.queryCommandState('justifyFull') ? 'justify' : 'left',
+        };
+      });
 
       // Check for list state
       const parentList = selection.anchorNode?.parentElement?.closest('ul, ol');
@@ -79,12 +89,9 @@ export const EditorProvider: React.FC<{
         updateEditorState();
         handleContentChange(editorRef.current.innerHTML);
       }
-    }, [updateEditorState]);
+    }, [handleContentChange, updateEditorState]);
 
-    const handleContentChange = React.useCallback((newContent: string) => {
-      setContent(newContent);
-      onChange?.(newContent);
-    }, [onChange]);
+
 
     const value = React.useMemo(() => ({
       content,
