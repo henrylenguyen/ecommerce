@@ -1,19 +1,22 @@
 // src/components/editor/hooks/useKeyboardHandlers.ts
-import { EditorState } from '@/components/common/editor/interface';
 import { useCallback } from 'react';
+import { EditorState } from '../interfaces/editor';
+import { checkForListMarker, createList } from '../utils/listUtils';
 import { LIST_STYLES } from '../constants';
-import { checkForListMarker, createList, getListLevel } from '../utils/listUtils';
+import { getListLevel } from '../utils/editorUtils';
 
 interface KeyboardHandlersProps {
   editorRef: React.RefObject<HTMLDivElement>;
   setEditorState: React.Dispatch<React.SetStateAction<EditorState>>;
   updateEditorState: () => void;
+  handleTripleColon?: (e: KeyboardEvent, selection: Selection) => boolean;
 }
 
 export const useKeyboardHandlers = ({
   editorRef,
   setEditorState,
   updateEditorState,
+  handleTripleColon
 }: KeyboardHandlersProps) => {
   const handleBlockquoteEnter = useCallback((
     selection: Selection,
@@ -108,7 +111,6 @@ export const useKeyboardHandlers = ({
         return true;
       }
 
-      // Exit list entirely
       const paragraph = document.createElement('p');
       paragraph.innerHTML = '<br>';
       parentList.parentNode?.insertBefore(paragraph, parentList.nextSibling);
@@ -259,6 +261,7 @@ export const useKeyboardHandlers = ({
     const maxLevel = parentList.tagName.toLowerCase() === 'ol' ? 4 : 2;
 
     if (e.shiftKey) {
+      // Un-indent
       const grandParentListItem = parentList.parentElement?.closest('li');
       if (grandParentListItem?.parentElement) {
         setEditorState(prev => ({
@@ -268,6 +271,7 @@ export const useKeyboardHandlers = ({
         }));
       }
     } else if (currentLevel < maxLevel) {
+      // Indent
       const prevListItem = listItem.previousElementSibling;
       if (prevListItem) {
         let targetList = prevListItem.querySelector(parentList.tagName.toLowerCase()) as HTMLElement;
@@ -300,25 +304,30 @@ export const useKeyboardHandlers = ({
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
     if (!editorRef.current) return;
 
+    const selection = window.getSelection();
+    if (!selection?.rangeCount) return;
+
+    // Check for alert type completion first
+    if (handleTripleColon && handleTripleColon(e, selection)) {
+      return;
+    }
+
     if (e.key === 'Tab') {
       handleTab(e);
       return;
     }
 
     if (e.key === 'Enter' && !e.shiftKey) {
-      const selection = window.getSelection();
-      if (selection?.rangeCount) {
-        const range = selection.getRangeAt(0);
-        const blockquote = range.startContainer.parentElement?.closest('blockquote');
+      const range = selection.getRangeAt(0);
+      const blockquote = range.startContainer.parentElement?.closest('blockquote');
 
-        if (blockquote) {
-          e.preventDefault();
-          handleBlockquoteEnter(selection, range, blockquote);
-          return;
-        }
-
-        if (handleListEnter(e)) return;
+      if (blockquote) {
+        e.preventDefault();
+        handleBlockquoteEnter(selection, range, blockquote);
+        return;
       }
+
+      if (handleListEnter(e)) return;
     }
 
     if (e.key === ' ') {
@@ -332,6 +341,7 @@ export const useKeyboardHandlers = ({
     handleListEnter,
     handleListMarkers,
     handleTab,
+    handleTripleColon,
     updateEditorState
   ]);
 

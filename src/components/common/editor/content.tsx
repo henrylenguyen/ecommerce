@@ -23,6 +23,12 @@ const Content: React.FC = () => {
   const { convertMarkdownToCodeBlock, renderCodeBlocks } = useCodeBlocks();
   const { convertMarkdownToAlertBlock, renderAlertBlocks } = useAlertBlocks();
 
+  const { handleKeyDown } = useKeyboardHandlers({
+    editorRef,
+    setEditorState,
+    updateEditorState,
+  });
+
   const handleInput = useCallback(() => {
     if (!editorRef.current || isProcessingRef.current) return;
 
@@ -38,13 +44,11 @@ const Content: React.FC = () => {
     contentRef.current = editorRef.current.innerHTML;
     updateEditorState();
     updateListState(window.getSelection(), setEditorState);
-  }, [updateEditorState, setEditorState, editorRef]);
 
-  const { handleKeyDown } = useKeyboardHandlers({
-    editorRef,
-    setEditorState,
-    updateEditorState
-  });
+    // Update content immediately for alert blocks
+    setContent(contentRef.current);
+    debouncedContentRef.current = contentRef.current;
+  }, [updateEditorState, setEditorState, editorRef, setContent]);
 
   const handleBlur = useCallback(() => {
     if (contentRef.current !== debouncedContentRef.current) {
@@ -77,20 +81,6 @@ const Content: React.FC = () => {
     }
   }, []);
 
-  useEffect(() => {
-    if (!editorRef.current) return;
-
-    editorRef.current.addEventListener('keydown', handleKeyDown);
-    editorRef.current.addEventListener('blur', handleBlur);
-
-    return () => {
-      if (editorRef.current) {
-        editorRef.current.removeEventListener('keydown', handleKeyDown);
-        editorRef.current.removeEventListener('blur', handleBlur);
-      }
-    };
-  }, [handleKeyDown, handleBlur]);
-
   return (
     <div
       ref={editorRef}
@@ -99,6 +89,8 @@ const Content: React.FC = () => {
       aria-multiline="true"
       tabIndex={0}
       onInput={handleInput}
+      onKeyDown={handleKeyDown}
+      onBlur={handleBlur}
       className={cn(
         "w-full min-h-[200px] p-4 focus:outline-none",
         "overflow-y-auto whitespace-pre-wrap",
